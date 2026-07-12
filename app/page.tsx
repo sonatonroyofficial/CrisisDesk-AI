@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   Zap,
   Activity,
-  HeartHandshake
+  HeartHandshake,
+  Compass
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 
@@ -30,6 +31,29 @@ export default function CitizenSubmitPage() {
   const [contact, setContact] = useState('');
   const [submittedReport, setSubmittedReport] = useState<Report | null>(null);
   const [showAdvice, setShowAdvice] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+
+  const handleAutoDetectLocation = () => {
+    if (!navigator.geolocation) {
+      alert('Geolocation is not supported by your browser.');
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLocation(`GPS: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        setGpsLoading(false);
+      },
+      (error) => {
+        console.warn('GPS Geolocation error:', error);
+        alert('Could not auto-detect location. Please select manually.');
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const submitMutation = useMutation({
     mutationFn: () => api.createReport({
@@ -57,6 +81,7 @@ export default function CitizenSubmitPage() {
     setContact('');
     setSubmittedReport(null);
     setShowAdvice(false);
+    setGpsLoading(false);
     submitMutation.reset();
   };
 
@@ -239,14 +264,50 @@ export default function CitizenSubmitPage() {
                       <MapPin className="w-3.5 h-3.5 text-blue-400" />
                       Incident Location <span className="text-red-500 font-bold">*</span>
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g. Dhanmondi Lake, near Bridge 3"
-                      className="w-full px-4 py-3 bg-slate-950/60 border border-slate-850 focus:border-blue-500/70 hover:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-white placeholder-slate-650 transition-all"
-                    />
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex-grow relative">
+                        <select
+                          required
+                          value={location}
+                          onChange={(e) => setLocation(e.target.value)}
+                          className="w-full px-4 py-3 bg-slate-950/60 border border-slate-850 focus:border-blue-500/70 hover:border-slate-800 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-white transition-all appearance-none cursor-pointer pr-10"
+                        >
+                          <option value="" disabled>Select incident location...</option>
+                          <option value="Dhanmondi, Dhaka">Dhanmondi, Dhaka</option>
+                          <option value="Gulshan, Dhaka">Gulshan, Dhaka</option>
+                          <option value="Mirpur, Dhaka">Mirpur, Dhaka</option>
+                          <option value="Uttara, Dhaka">Uttara, Dhaka</option>
+                          <option value="Banani, Dhaka">Banani, Dhaka</option>
+                          {location && !['Dhanmondi, Dhaka', 'Gulshan, Dhaka', 'Mirpur, Dhaka', 'Uttara, Dhaka', 'Banani, Dhaka'].includes(location) && (
+                            <option value={location}>{location}</option>
+                          )}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAutoDetectLocation}
+                        disabled={gpsLoading}
+                        className="px-4 py-3 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 hover:text-blue-300 border border-blue-500/20 focus:outline-none rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 shrink-0 shadow-sm shadow-blue-500/5 select-none"
+                      >
+                        {gpsLoading ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                            <span>Detecting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Compass className="w-4 h-4" />
+                            <span>Auto-Detect (GPS)</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Description input */}
