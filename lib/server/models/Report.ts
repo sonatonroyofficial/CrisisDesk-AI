@@ -19,6 +19,7 @@ export interface IReport extends Document {
   possibleDuplicate: boolean;
   matchedReportId: mongoose.Types.ObjectId | null;
   status: StatusType;
+  embedding?: number[] | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +84,10 @@ const ReportSchema: Schema = new Schema<IReport>(
       type: String,
       enum: ['pending', 'in_review', 'assigned', 'resolved', 'rejected'],
       default: 'pending',
+    },
+    embedding: {
+      type: [Number],
+      default: null,
     },
   },
   {

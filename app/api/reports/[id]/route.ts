@@ -29,12 +29,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     const { id } = params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ success: false, message: 'Report not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
     }
 
     const report = await Report.findById(id);
     if (!report) {
-      return NextResponse.json({ success: false, message: 'Report not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: report });
@@ -51,7 +51,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const { id } = params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ success: false, message: 'Report not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
     }
 
     // Verify admin credentials
@@ -62,7 +62,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     const deletedReport = await Report.findByIdAndDelete(id);
     if (!deletedReport) {
-      return NextResponse.json({ success: false, message: 'Report not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: { deleted: true } });

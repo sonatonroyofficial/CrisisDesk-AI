@@ -29,7 +29,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { id } = params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return NextResponse.json({ success: false, message: 'Report not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
     }
 
     // Verify admin credentials
@@ -41,8 +41,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const body = await req.json();
     const { status } = body;
 
-    if (!status) {
-      return NextResponse.json({ success: false, message: 'Status is required' }, { status: 400 });
+    const allowedStatuses = ['pending', 'in_review', 'assigned', 'resolved', 'rejected'];
+    if (!status || !allowedStatuses.includes(status)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid status value. Allowed values: pending, in_review, assigned, resolved, rejected.' },
+        { status: 400 }
+      );
     }
 
     const updatedReport = await Report.findByIdAndUpdate(
@@ -52,7 +56,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     );
 
     if (!updatedReport) {
-      return NextResponse.json({ success: false, message: 'Report not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data: updatedReport });

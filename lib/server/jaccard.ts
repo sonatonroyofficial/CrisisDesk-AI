@@ -22,10 +22,30 @@ function calculateJaccardSimilarity(setA: Set<string>, setB: Set<string>): numbe
   return intersection.size / union.size;
 }
 
+// Helper to calculate Cosine Similarity between two numeric vectors
+function calculateCosineSimilarity(vecA: number[], vecB: number[]): number {
+  if (vecA.length !== vecB.length || vecA.length === 0) return 0;
+  
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  
+  for (let i = 0; i < vecA.length; i++) {
+    dotProduct += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  
+  if (normA === 0 || normB === 0) return 0;
+  
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 interface DuplicateCheckParams {
   location: string;
   category: string | null;
   description: string;
+  newEmbedding?: number[] | null;
   excludeId?: any;
 }
 
@@ -38,6 +58,7 @@ export async function checkDuplicate({
   location,
   category,
   description,
+  newEmbedding,
   excludeId,
 }: DuplicateCheckParams): Promise<DuplicateCheckResult> {
   const timeLimit = new Date(Date.now() - 24 * 60 * 60 * 1000); // last 24 hours
@@ -55,6 +76,26 @@ export async function checkDuplicate({
   }
 
   const candidates = await Report.find(query);
+
+  // 1. Try advanced duplicate check using Gemini Text Embeddings (if available)
+  if (newEmbedding && newEmbedding.length > 0) {
+    for (const candidate of candidates) {
+      if (candidate.embedding && candidate.embedding.length === newEmbedding.length) {
+        const similarity = calculateCosineSimilarity(newEmbedding, candidate.embedding);
+        
+        // Threshold: 0.85 indicates high semantic similarity
+        if (similarity > 0.85) {
+          console.log(`[Duplicate Check] Embedding Cosine Similarity match: ${similarity.toFixed(4)}`);
+          return {
+            possibleDuplicate: true,
+            matchedReportId: candidate._id,
+          };
+        }
+      }
+    }
+  }
+
+  // 2. Fallback: Word-overlap Jaccard Similarity check
   const newWords = getWords(description);
 
   for (const candidate of candidates) {
@@ -62,6 +103,7 @@ export async function checkDuplicate({
     const similarity = calculateJaccardSimilarity(newWords, candidateWords);
 
     if (similarity > 0.6) {
+      console.log(`[Duplicate Check] Fallback Jaccard Word-Overlap match: ${similarity.toFixed(4)}`);
       return {
         possibleDuplicate: true,
         matchedReportId: candidate._id,

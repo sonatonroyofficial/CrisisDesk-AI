@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/server/db';
 import Report from '@/lib/server/models/Report';
-import { classifyReport, fallbackClassify } from '@/lib/server/gemini';
+import { classifyReport, fallbackClassify, getEmbedding } from '@/lib/server/gemini';
 import { checkDuplicate } from '@/lib/server/jaccard';
+import { isRateLimited } from '@/lib/server/rateLimiter';
 
 // Helper to escape regex special characters for safe query matching
 function escapeRegExp(text: string): string {
@@ -75,13 +76,28 @@ export async function GET(req: NextRequest) {
 // POST /api/reports (Public citizen report submission)
 export async function POST(req: NextRequest) {
   try {
+    // Check Rate Limiting
+    const limitCheck = isRateLimited(req);
+    const headers = {
+      'X-RateLimit-Limit': String(limitCheck.limit),
+      'X-RateLimit-Remaining': String(limitCheck.remaining),
+      'X-RateLimit-Reset': String(limitCheck.reset),
+    };
+
+    if (limitCheck.limited) {
+      return NextResponse.json(
+        { success: false, message: 'Too many requests. Please try again later.' },
+        { status: 429, headers }
+      );
+    }
+
     await connectDB();
 
     const body = await req.json();
     const { description, location, contact, name, language } = body;
 
     if (!description || !location) {
-      return NextResponse.json({ success: false, message: 'Description and location are required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Description and location are required.' }, { status: 400 });
     }
 
     const reportLang = language || 'unknown';
@@ -99,15 +115,24 @@ export async function POST(req: NextRequest) {
       try {
         aiResult = fallbackClassify({ description });
       } catch (fallbackErr) {
-        return NextResponse.json({ success: false, message: 'AI Triage classification failed' }, { status: 500 });
+        return NextResponse.json({ success: false, message: 'AI classification failed. Please try again.' }, { status: 500 });
       }
     }
 
-    // Run Jaccard duplicate matching
+    // Generate text embedding for new report
+    let embeddingVal = null;
+    try {
+      embeddingVal = await getEmbedding(description);
+    } catch (err) {
+      console.warn('[API Route /reports] Failed to generate embedding:', err);
+    }
+
+    // Run advanced duplicate matching with Jaccard fallback
     const duplicateCheck = await checkDuplicate({
       location,
       category: aiResult.category,
       description,
+      newEmbedding: embeddingVal,
     });
 
     const newReport = new Report({
@@ -123,14 +148,22 @@ export async function POST(req: NextRequest) {
       confidence: aiResult.confidence,
       possibleDuplicate: duplicateCheck.possibleDuplicate,
       matchedReportId: duplicateCheck.matchedReportId,
+      embedding: embeddingVal,
       status: 'pending',
     });
 
     const savedReport = await newReport.save();
 
-    return NextResponse.json({ success: true, data: savedReport }, { status: 201 });
+    return NextResponse.json({ success: true, data: savedReport }, { status: 201, headers });
   } catch (error: any) {
     console.error('[POST /api/reports Error]:', error);
-    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
+    // Return headers in error too if defined, otherwise regular 500
+    const limitCheck = isRateLimited(req);
+    const errorHeaders = {
+      'X-RateLimit-Limit': String(limitCheck.limit),
+      'X-RateLimit-Remaining': String(limitCheck.remaining),
+      'X-RateLimit-Reset': String(limitCheck.reset),
+    };
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500, headers: errorHeaders });
   }
 }

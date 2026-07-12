@@ -119,3 +119,25 @@ export function fallbackClassify({ description }: { description: string }): Clas
     confidence: 0.4,
   };
 }
+
+export async function getEmbedding(text: string): Promise<number[] | null> {
+  // If running in a test environment, return null to bypass network request
+  if (process.env.NODE_ENV === 'test') {
+    return null;
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'dummy_gemini_api_key' || apiKey.trim() === '') {
+    return null;
+  }
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    const result = await model.embedContent(text);
+    return result.embedding.values;
+  } catch (error) {
+    console.warn('[Gemini Embedding Error] Failed to generate embedding:', error);
+    return null;
+  }
+}
+
