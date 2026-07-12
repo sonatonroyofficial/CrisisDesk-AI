@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from './AuthContext';
-import { ShieldAlert, LogOut, LogIn, LayoutDashboard, Database } from 'lucide-react';
+import { ShieldAlert, LogOut, LogIn, LayoutDashboard, Database, Send } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -36,12 +36,24 @@ export default function Navbar() {
 
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
+          {/* User Side Link */}
+          <Link 
+            href="/submit" 
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${pathname === '/submit' ? 'text-white bg-blue-600/40 border border-blue-500/50' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
+          >
+            <Send className="w-4 h-4 text-blue-400" />
+            <span>📢 Citizen Portal</span>
+          </Link>
+
+          <span className="h-4 w-px bg-slate-850" />
+
+          {/* Admin Side Links */}
           <Link 
             href="/" 
             className={`flex items-center gap-1.5 transition-colors ${pathname === '/' ? 'text-blue-400 font-bold' : 'text-slate-350 hover:text-white'}`}
           >
             <LayoutDashboard className="w-4 h-4" />
-            Dashboard
+            Admin Dashboard
           </Link>
           <Link 
             href="/reports" 
@@ -55,12 +67,15 @@ export default function Navbar() {
 
       <div className="flex items-center gap-4">
         {/* Mobile quick links */}
-        <div className="flex md:hidden items-center gap-4 text-xs font-semibold mr-2">
+        <div className="flex md:hidden items-center gap-3 text-xs font-semibold mr-2">
+          <Link href="/submit" className={pathname === '/submit' ? 'text-blue-400' : 'text-slate-300'}>
+            Report 📢
+          </Link>
           <Link href="/" className={pathname === '/' ? 'text-blue-400' : 'text-slate-300'}>
             Dashboard
           </Link>
           <Link href="/reports" className={pathname.startsWith('/reports') ? 'text-blue-400' : 'text-slate-300'}>
-            Reports
+            Directory
           </Link>
         </div>
 

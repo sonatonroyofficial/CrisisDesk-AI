@@ -78,6 +78,24 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const api = {
+  // 0. Create Report (Citizen submission)
+  async createReport(reportData: {
+    description: string;
+    location: string;
+    name?: string;
+    contact?: string;
+    language?: string;
+  }): Promise<Report> {
+    const res = await fetch(`${BASE_URL}/api/reports`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(reportData),
+    });
+    return handleResponse<Report>(res);
+  },
+
   // 1. Get Stats Summary
   async getStatsSummary(): Promise<StatsSummary> {
     const res = await fetch(`${BASE_URL}/api/reports/stats/summary`, {
