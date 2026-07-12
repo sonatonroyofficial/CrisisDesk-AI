@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import Report from '../models/Report';
-import { successResponse, errorResponse } from '../utils/ApiResponse';
+import { successResponse } from '../utils/ApiResponse';
 import { classifyReport, fallbackClassify, ClassificationResult } from '../services/ai.service';
 import { checkDuplicate } from '../services/duplicate.service';
+import { AppError } from '../middlewares/errorHandler';
 
 // Helper to escape regex special characters for safe query matching
 function escapeRegExp(text: string): string {
@@ -11,7 +12,7 @@ function escapeRegExp(text: string): string {
 }
 
 // POST /api/reports
-export async function createReport(req: Request, res: Response) {
+export async function createReport(req: Request, res: Response, next: NextFunction) {
   try {
     const { description, location, contact, name, language } = req.body;
 
@@ -27,8 +28,12 @@ export async function createReport(req: Request, res: Response) {
       });
     } catch (error) {
       console.warn('[Report Controller] AI classification failed, using keyword-based fallback classifier.');
-      // Execute the keyword fallback classifier
-      aiResult = fallbackClassify({ description });
+      try {
+        // Execute the keyword fallback classifier
+        aiResult = fallbackClassify({ description });
+      } catch (fallbackError) {
+        throw new AppError('AI classification failed. Please try again.', 500);
+      }
     }
 
     // Check if this report is a duplicate of an existing one in the last 24 hours
@@ -59,13 +64,12 @@ export async function createReport(req: Request, res: Response) {
 
     return res.status(201).json(successResponse(savedReport));
   } catch (error) {
-    console.error('Error creating report:', error);
-    return res.status(500).json(errorResponse('Failed to create report'));
+    next(error);
   }
 }
 
 // GET /api/reports (with filtering, pagination, and text search)
-export async function getReports(req: Request, res: Response) {
+export async function getReports(req: Request, res: Response, next: NextFunction) {
   try {
     const { category, urgency, status, search, from, to, page, limit } = req.query;
 
@@ -105,40 +109,38 @@ export async function getReports(req: Request, res: Response) {
 
     return res.json(successResponse({ reports, total, page: pageNum, limit: limitNum }));
   } catch (error) {
-    console.error('Error fetching reports:', error);
-    return res.status(500).json(errorResponse('Failed to fetch reports'));
+    next(error);
   }
 }
 
 // GET /api/reports/:id
-export async function getReportById(req: Request, res: Response) {
+export async function getReportById(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(404).json(errorResponse('Report not found.'));
+      throw new AppError('Report not found.', 404);
     }
 
     const report = await Report.findById(id);
     if (!report) {
-      return res.status(404).json(errorResponse('Report not found.'));
+      throw new AppError('Report not found.', 404);
     }
 
     return res.json(successResponse(report));
   } catch (error) {
-    console.error('Error fetching report by ID:', error);
-    return res.status(500).json(errorResponse('Failed to fetch report'));
+    next(error);
   }
 }
 
 // PATCH /api/reports/:id/status
-export async function updateReportStatus(req: Request, res: Response) {
+export async function updateReportStatus(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(404).json(errorResponse('Report not found.'));
+      throw new AppError('Report not found.', 404);
     }
 
     const updatedReport = await Report.findByIdAndUpdate(
@@ -148,33 +150,31 @@ export async function updateReportStatus(req: Request, res: Response) {
     );
 
     if (!updatedReport) {
-      return res.status(404).json(errorResponse('Report not found.'));
+      throw new AppError('Report not found.', 404);
     }
 
     return res.json(successResponse(updatedReport));
   } catch (error) {
-    console.error('Error updating report status:', error);
-    return res.status(500).json(errorResponse('Failed to update report status'));
+    next(error);
   }
 }
 
 // DELETE /api/reports/:id
-export async function deleteReport(req: Request, res: Response) {
+export async function deleteReport(req: Request, res: Response, next: NextFunction) {
   try {
     const { id } = req.params;
 
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(404).json(errorResponse('Report not found.'));
+      throw new AppError('Report not found.', 404);
     }
 
     const deletedReport = await Report.findByIdAndDelete(id);
     if (!deletedReport) {
-      return res.status(404).json(errorResponse('Report not found.'));
+      throw new AppError('Report not found.', 404);
     }
 
     return res.json(successResponse({ deleted: true }));
   } catch (error) {
-    console.error('Error deleting report:', error);
-    return res.status(500).json(errorResponse('Failed to delete report'));
+    next(error);
   }
 }

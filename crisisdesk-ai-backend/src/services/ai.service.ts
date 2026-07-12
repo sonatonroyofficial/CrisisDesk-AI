@@ -22,6 +22,18 @@ export async function classifyReport({
   location: string;
   language: string;
 }): Promise<ClassificationResult> {
+  // If running in a test environment, return a mock result immediately
+  // to avoid network requests, latency, and rate-limiting timeouts
+  if (process.env.NODE_ENV === 'test') {
+    return {
+      category: (process.env.MOCK_CATEGORY as any) || 'utility',
+      urgency: (process.env.MOCK_URGENCY as any) || 'critical',
+      summary: 'Mocked summary description of the report.',
+      suggestedAction: 'Mocked recommended action.',
+      confidence: 0.95,
+    };
+  }
+
   const apiKey = env.GEMINI_API_KEY;
   if (!apiKey || apiKey === 'dummy_gemini_api_key' || apiKey.trim() === '') {
     throw new Error('AI_CLASSIFICATION_FAILED');

@@ -23,4 +23,6 @@ export const env = {
   MONGODB_URI: process.env.MONGODB_URI!,
   GEMINI_API_KEY: geminiApiKey || '',
   JWT_SECRET: process.env.JWT_SECRET!,
+  ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin',
+  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'admin123',
 };
