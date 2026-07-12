@@ -50,7 +50,7 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const BASE_URL = '';
 
 function getHeaders(token?: string): HeadersInit {
   const headers: HeadersInit = {
