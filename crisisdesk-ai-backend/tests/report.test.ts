@@ -30,7 +30,7 @@ describe('CrisisDesk-AI Reports API Tests', () => {
   beforeAll(async () => {
     const loginRes = await request(app)
       .post('/api/admin/login')
-      .send({ username: 'admin', password: 'admin123' });
+      .send({ username: 'sonaton.fl@gmail.com', password: '123456' });
     adminToken = loginRes.body.data.token;
   });
 

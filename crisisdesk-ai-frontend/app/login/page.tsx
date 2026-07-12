@@ -4,22 +4,23 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/AuthContext';
-import { api } from '@/lib/api';
-import { ShieldAlert, ArrowLeft, Lock, User, AlertCircle } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { ShieldAlert, ArrowLeft, Lock, Mail, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
-      setErrorMessage('Username and password are required.');
+    if (!email || !password) {
+      setErrorMessage('Email and password are required.');
       return;
     }
 
@@ -27,11 +28,36 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     try {
-      const res = await api.adminLogin({ username, password });
-      login(res.token);
-      router.push('/');
+      // Sign in using Firebase client SDK
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Enforce admin UID check on client-side
+      if (user.uid !== 'rxiVG15KuRTtYitVvcbHKwvj1kt1') {
+        throw new Error('Access denied: You are not registered as an authorized administrator.');
+      }
+
+      // Retrieve the Firebase JWT ID Token
+      const token = await user.getIdToken();
+      
+      // Store the token globally via context
+      login(token);
+      
+      // Redirect to protected dashboard
+      router.push('/admin');
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'Invalid admin credentials.');
+      let msg = 'Authentication failed. Please verify your credentials.';
+      if (err instanceof Error) {
+        // Beautify Firebase errors
+        if (err.message.includes('auth/invalid-credential')) {
+          msg = 'Invalid email or password. Please try again.';
+        } else if (err.message.includes('auth/invalid-email')) {
+          msg = 'Please enter a valid email address.';
+        } else {
+          msg = err.message;
+        }
+      }
+      setErrorMessage(msg);
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +71,7 @@ export default function LoginPage() {
         className="absolute top-6 left-6 flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors select-none"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
-        Back to Dashboard
+        Back to Citizen Portal
       </Link>
 
       {/* Login Card */}
@@ -72,19 +98,19 @@ export default function LoginPage() {
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {/* Username */}
+          {/* Email */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Username</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                <User className="w-4 h-4" />
+                <Mail className="w-4 h-4" />
               </span>
               <input
-                type="text"
+                type="email"
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter admin username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="sonaton.fl@gmail.com"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               />
             </div>
@@ -102,7 +128,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter admin password"
+                placeholder="••••••"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               />
             </div>
