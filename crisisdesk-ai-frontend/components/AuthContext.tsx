@@ -5,6 +5,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface AuthContextType {
   token: string | null;
   isAdmin: boolean;
+  isInitialized: boolean;
   login: (token: string) => void;
   logout: () => void;
 }
@@ -12,30 +13,40 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Synchronous initialization from localStorage to prevent screen flickering/redirect loops
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('crisisdesk_admin_token');
+  const [token, setToken] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  useEffect(() => {
+    try {
+      const activeToken = localStorage.getItem('crisisdesk_admin_token');
+      setToken(activeToken);
+    } catch (error) {
+      console.warn('localStorage is not accessible:', error);
+    } finally {
+      setIsInitialized(true);
     }
-    return null;
-  });
+  }, []);
 
   const login = (newToken: string) => {
-    if (typeof window !== 'undefined') {
+    try {
       localStorage.setItem('crisisdesk_admin_token', newToken);
-      setToken(newToken);
+    } catch (error) {
+      console.warn('localStorage is not writable:', error);
     }
+    setToken(newToken);
   };
 
   const logout = () => {
-    if (typeof window !== 'undefined') {
+    try {
       localStorage.removeItem('crisisdesk_admin_token');
-      setToken(null);
+    } catch (error) {
+      console.warn('localStorage clear failed:', error);
     }
+    setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, isAdmin: !!token, login, logout }}>
+    <AuthContext.Provider value={{ token, isAdmin: !!token, isInitialized, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

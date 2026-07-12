@@ -45,17 +45,22 @@ export default function LoginPage() {
       
       // Redirect to protected dashboard
       router.push('/admin');
-    } catch (err) {
-      let msg = 'Authentication failed. Please verify your credentials.';
-      if (err instanceof Error) {
-        // Beautify Firebase errors
-        if (err.message.includes('auth/invalid-credential')) {
-          msg = 'Invalid email or password. Please try again.';
-        } else if (err.message.includes('auth/invalid-email')) {
-          msg = 'Please enter a valid email address.';
-        } else {
-          msg = err.message;
-        }
+    } catch (err: any) {
+      // Surface the actual Firebase error code for easier debugging
+      const code = err?.code || '';
+      let msg = `Authentication failed. (${code || err?.message || 'Unknown error'})`;
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        msg = 'Invalid email or password. Please verify your Firebase credentials.';
+      } else if (code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (code === 'auth/too-many-requests') {
+        msg = 'Too many failed attempts. Please wait a moment and try again.';
+      } else if (code === 'auth/operation-not-allowed') {
+        msg = 'Email/Password sign-in is disabled in Firebase Console. Please enable it under Authentication → Sign-in method.';
+      } else if (code === 'auth/network-request-failed') {
+        msg = 'Network error — please check your internet connection.';
+      } else if (err instanceof Error) {
+        msg = err.message;
       }
       setErrorMessage(msg);
     } finally {

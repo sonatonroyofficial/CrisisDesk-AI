@@ -26,14 +26,14 @@ export default function ReportDetailPage() {
   const queryClient = useQueryClient();
   const id = params.id as string;
 
-  const { token, isAdmin, logout } = useAuth();
+  const { token, isAdmin, isInitialized, logout } = useAuth();
 
   // Redirect to login if not authenticated as admin
   useEffect(() => {
-    if (!isAdmin) {
+    if (isInitialized && !isAdmin) {
       router.push('/login');
     }
-  }, [isAdmin, router]);
+  }, [isAdmin, isInitialized, router]);
 
   // Fetch Report Details
   const { data: report, isLoading, isError, error } = useQuery({

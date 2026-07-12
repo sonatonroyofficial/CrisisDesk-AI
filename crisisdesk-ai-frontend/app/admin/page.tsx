@@ -18,15 +18,15 @@ import {
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isInitialized } = useAuth();
   const router = useRouter();
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated (only after auth context is fully initialized)
   React.useEffect(() => {
-    if (!isAdmin) {
+    if (isInitialized && !isAdmin) {
       router.push('/login');
     }
-  }, [isAdmin, router]);
+  }, [isAdmin, isInitialized, router]);
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['statsSummary'],

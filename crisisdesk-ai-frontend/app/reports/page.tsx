@@ -16,15 +16,15 @@ import {
 } from 'lucide-react';
 
 export default function ReportsListPage() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isInitialized } = useAuth();
   const router = useRouter();
 
   // Redirect to login if not authenticated as admin
   React.useEffect(() => {
-    if (!isAdmin) {
+    if (isInitialized && !isAdmin) {
       router.push('/login');
     }
-  }, [isAdmin, router]);
+  }, [isAdmin, isInitialized, router]);
 
   // Filters State
   const [search, setSearch] = useState('');
