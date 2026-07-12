@@ -17,7 +17,8 @@ import {
   ShieldAlert,
   ShieldCheck,
   Zap,
-  Activity
+  Activity,
+  HeartHandshake
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthContext';
 
@@ -28,6 +29,7 @@ export default function CitizenSubmitPage() {
   const [name, setName] = useState('');
   const [contact, setContact] = useState('');
   const [submittedReport, setSubmittedReport] = useState<Report | null>(null);
+  const [showAdvice, setShowAdvice] = useState(false);
 
   const submitMutation = useMutation({
     mutationFn: () => api.createReport({
@@ -54,6 +56,7 @@ export default function CitizenSubmitPage() {
     setName('');
     setContact('');
     setSubmittedReport(null);
+    setShowAdvice(false);
     submitMutation.reset();
   };
 
@@ -176,6 +179,30 @@ export default function CitizenSubmitPage() {
                     </p>
                   </div>
                 )}
+
+                {/* What to do right now Button */}
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvice(!showAdvice)}
+                    className="w-full py-3 px-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 hover:text-amber-300 border border-amber-500/20 focus:outline-none rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm shadow-amber-500/5"
+                  >
+                    <HeartHandshake className="w-4 h-4" />
+                    <span>{showAdvice ? 'Hide Safety Instructions' : 'What should I do right now? / এই মুহূর্তে আপনার করণীয় কী?'}</span>
+                  </button>
+
+                  {showAdvice && (
+                    <div className="mt-3 p-5 bg-slate-950/50 border border-amber-500/20 rounded-2xl animate-fade-in select-text">
+                      <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5 select-none">
+                        <HeartHandshake className="w-3.5 h-3.5" />
+                        Immediate Action Guide
+                      </h4>
+                      <p className="text-xs text-slate-350 leading-relaxed whitespace-pre-wrap italic">
+                        {submittedReport.citizenAdvice || "Stay calm. Keep away from immediate danger. If safe, administer first-aid and wait for emergency services to arrive."}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
                  <div className="flex flex-col sm:flex-row gap-3 mt-2">
                   <button

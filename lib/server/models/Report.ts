@@ -15,6 +15,7 @@ export interface IReport extends Document {
   urgency: UrgencyType | null;
   summary: string | null;
   suggestedAction: string | null;
+  citizenAdvice: string | null;
   confidence: number | null;
   possibleDuplicate: boolean;
   matchedReportId: mongoose.Types.ObjectId | null;
@@ -62,6 +63,10 @@ const ReportSchema: Schema = new Schema<IReport>(
       default: null,
     },
     suggestedAction: {
+      type: String,
+      default: null,
+    },
+    citizenAdvice: {
       type: String,
       default: null,
     },

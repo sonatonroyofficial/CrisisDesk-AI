@@ -7,6 +7,7 @@ const classificationResultSchema = z.object({
   urgency: z.enum(["low", "medium", "high", "critical"]),
   summary: z.string(),
   suggestedAction: z.string(),
+  citizenAdvice: z.string(),
   confidence: z.number().min(0).max(1),
 });
 
@@ -28,6 +29,7 @@ export async function classifyReport({
       urgency: (process.env.MOCK_URGENCY as any) || 'critical',
       summary: 'Mocked summary description of the report.',
       suggestedAction: 'Mocked recommended action.',
+      citizenAdvice: 'Mocked safety guidance for the citizen.',
       confidence: 0.95,
     };
   }
@@ -42,7 +44,7 @@ export async function classifyReport({
     // Use gemini-3.5-flash as active in this environment
     const model = genAI.getGenerativeModel({
       model: 'gemini-3.5-flash',
-      systemInstruction: 'You are an emergency-report triage classifier for CrisisDesk AI. Given a citizen\'s report (which may be in Bangla, English, or mixed), return ONLY a raw JSON object — no markdown, no explanation — matching: { "category": one of ["medical","fire","accident","crime","flood","utility","public_service","infrastructure","other"], "urgency": one of ["low","medium","high","critical"], "summary": a one-sentence English summary of the report, "suggestedAction": a short recommended action for responders, "confidence": a number between 0 and 1 }',
+      systemInstruction: 'You are an emergency-report triage classifier for CrisisDesk AI. Given a citizen\'s report (which may be in Bangla, English, or mixed), return ONLY a raw JSON object — no markdown, no explanation — matching: { "category": one of ["medical","fire","accident","crime","flood","utility","public_service","infrastructure","other"], "urgency": one of ["low","medium","high","critical"], "summary": a one-sentence English summary of the report, "suggestedAction": a short recommended action for responders, "citizenAdvice": a short reassuring first-aid or immediate safety instruction (in simple English) advising what the reporter should do right now in this situation before responders arrive, "confidence": a number between 0 and 1 }',
     });
 
     const userPrompt = `Location: ${location}\nLanguage: ${language}\nDescription: ${description}`;
@@ -106,6 +108,20 @@ export function fallbackClassify({ description }: { description: string }): Clas
     urgency = 'medium';
   }
 
+  // Set appropriate first-aid/safety advice based on category
+  let citizenAdvice = 'Stay calm. Keep away from immediate danger. If safe, administer first-aid and wait for emergency services to arrive.';
+  if (category === 'fire') {
+    citizenAdvice = 'Evacuate the building immediately. Do not use elevators. If there is smoke, crawl low under it. Call the fire department.';
+  } else if (category === 'medical') {
+    citizenAdvice = 'If bleeding, apply direct pressure. Keep the person warm. Do not move them unless they are in immediate danger.';
+  } else if (category === 'flood') {
+    citizenAdvice = 'Move to higher ground. Avoid walking or driving through flood waters. Keep emergency contacts ready.';
+  } else if (category === 'accident') {
+    citizenAdvice = 'Keep clear of the road. Do not attempt to move severely injured people. Turn on hazard warning lights if driving.';
+  } else if (category === 'crime') {
+    citizenAdvice = 'Find a safe, locked place. Do not confront suspects. Observe details from a distance and wait for police.';
+  }
+
   // Summary: truncated version of description (up to 100 characters)
   const truncatedSummary = description.length > 100 
     ? description.substring(0, 97) + '...'
@@ -116,6 +132,7 @@ export function fallbackClassify({ description }: { description: string }): Clas
     urgency,
     summary: truncatedSummary,
     suggestedAction: 'Dispatch relevant authority for verification.',
+    citizenAdvice,
     confidence: 0.4,
   };
 }

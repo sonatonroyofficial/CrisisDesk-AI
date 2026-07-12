@@ -145,6 +145,7 @@ export async function POST(req: NextRequest) {
       urgency: aiResult.urgency,
       summary: aiResult.summary,
       suggestedAction: aiResult.suggestedAction,
+      citizenAdvice: aiResult.citizenAdvice,
       confidence: aiResult.confidence,
       possibleDuplicate: duplicateCheck.possibleDuplicate,
       matchedReportId: duplicateCheck.matchedReportId,

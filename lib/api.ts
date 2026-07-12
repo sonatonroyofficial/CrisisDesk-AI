@@ -18,6 +18,7 @@ export interface Report {
   urgency: 'low' | 'medium' | 'high' | 'critical' | null;
   summary: string | null;
   suggestedAction: string | null;
+  citizenAdvice: string | null;
   confidence: number | null;
   possibleDuplicate: boolean;
   matchedReportId: string | null;
