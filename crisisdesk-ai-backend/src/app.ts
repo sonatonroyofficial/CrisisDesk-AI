@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 import { env } from './config/env';
 import { connectDB } from './config/db';
 import { successResponse } from './utils/ApiResponse';
@@ -10,6 +11,9 @@ import { globalLimiter } from './middlewares/rateLimiter';
 import { setupSwagger } from './docs/swagger';
 
 const app = express();
+
+// Enable CORS for cross-origin requests
+app.use(cors());
 
 // Set up Swagger docs on /api-docs
 setupSwagger(app);
