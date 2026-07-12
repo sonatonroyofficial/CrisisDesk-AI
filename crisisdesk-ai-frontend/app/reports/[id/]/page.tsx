@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import StatusBadge from '@/components/StatusBadge';
 import { 
-  ShieldAlert, 
   ArrowLeft, 
   AlertTriangle, 
   User, 
@@ -17,10 +16,7 @@ import {
   MapPin, 
   Lock, 
   Calendar,
-  Layers,
-  Sparkles,
-  PlaySquare,
-  Activity
+  Sparkles
 } from 'lucide-react';
 
 export default function ReportDetailPage() {
@@ -68,14 +64,13 @@ export default function ReportDetailPage() {
       localStorage.removeItem('crisisdesk_admin_token');
       setToken(null);
       setIsAdmin(false);
-      router.refresh();
+      router.push('/');
     }
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800 animate-pulse">
-        <header className="bg-slate-900 h-16 w-full border-b border-slate-800" />
         <main className="flex-grow p-6 md:p-12 max-w-5xl mx-auto w-full">
           <div className="h-6 bg-slate-200 rounded w-1/4 mb-4" />
           <div className="h-4 bg-slate-200 rounded w-1/2 mb-8" />
@@ -91,19 +86,13 @@ export default function ReportDetailPage() {
   if (isError || !report) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800">
-        <header className="bg-slate-900 text-white py-4 px-6 flex items-center justify-between">
-          <span className="font-bold">CrisisDesk AI</span>
-          <Link href="/reports" className="flex items-center gap-1.5 text-xs bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to List
-          </Link>
-        </header>
         <main className="flex-grow flex flex-col items-center justify-center p-6 text-center">
           <div className="p-4 bg-red-50 text-red-600 rounded-full mb-4">
             <AlertTriangle className="w-10 h-10" />
           </div>
           <h2 className="text-xl font-bold text-slate-900">Report Not Found</h2>
           <p className="text-sm text-slate-500 mt-2 max-w-sm">
-            {error instanceof Error ? error.message : 'The requested emergency report could not be found or has an invalid identifier.'}
+            {error instanceof Error ? error.message : 'The requested emergency report could not be found.'}
           </p>
           <Link href="/reports" className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
             Return to Reports Directory
@@ -115,29 +104,19 @@ export default function ReportDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800">
-      {/* Header */}
-      <header className="bg-slate-900 text-white py-4 px-6 md:px-12 flex items-center justify-between border-b border-slate-800 shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-600 rounded-lg text-white">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">CrisisDesk AI</h1>
-            <p className="text-xs text-slate-400">Report Inspector Console</p>
-          </div>
-        </div>
-
-        <Link 
-          href="/reports" 
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-sm font-medium rounded-xl border border-slate-700 hover:bg-slate-700 transition-colors duration-200 cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Back to List</span>
-        </Link>
-      </header>
-
       {/* Main Container */}
       <main className="flex-grow p-6 md:p-12 max-w-6xl mx-auto w-full">
+        {/* Breadcrumb Back Button */}
+        <div className="mb-6 select-none">
+          <Link 
+            href="/reports" 
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-700 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to Directory
+          </Link>
+        </div>
+
         {/* Possible Duplicate Warning Banner */}
         {report.possibleDuplicate && report.matchedReportId && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-900">
@@ -150,7 +129,7 @@ export default function ReportDetailPage() {
             </div>
             <Link 
               href={`/reports/${report.matchedReportId}`}
-              className="self-start sm:self-center px-3.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-xs font-bold rounded-xl border border-amber-250 transition-colors cursor-pointer shrink-0"
+              className="px-3.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-xs font-bold rounded-xl border border-amber-250 transition-colors cursor-pointer"
             >
               Inspect Original Report
             </Link>
@@ -158,18 +137,16 @@ export default function ReportDetailPage() {
         )}
 
         {/* Title */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-mono bg-slate-200 text-slate-600 px-2 py-0.5 rounded-lg border border-slate-350">{report._id}</span>
-              <StatusBadge type="status" value={report.status} />
-              <StatusBadge type="urgency" value={report.urgency} />
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-950 mt-3 flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-blue-600" />
-              {report.location}
-            </h2>
+        <div className="mb-8">
+          <div className="flex items-center gap-2 flex-wrap select-none">
+            <span className="text-xs font-mono bg-slate-200 text-slate-600 px-2 py-0.5 rounded-lg border border-slate-350">{report._id}</span>
+            <StatusBadge type="status" value={report.status} />
+            <StatusBadge type="urgency" value={report.urgency} />
           </div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950 mt-3 flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-blue-600" />
+            {report.location}
+          </h2>
         </div>
 
         {/* Layout Grid */}
@@ -264,7 +241,7 @@ export default function ReportDetailPage() {
                   
                   <button 
                     onClick={handleLogout}
-                    className="mt-2 text-center text-xs font-bold text-red-600 hover:text-red-800 transition-colors w-full cursor-pointer"
+                    className="mt-2 text-center text-xs font-bold text-red-600 hover:text-red-800 transition-colors w-full cursor-pointer border-none bg-transparent"
                   >
                     Logout Admin Session
                   </button>

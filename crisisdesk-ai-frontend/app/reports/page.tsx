@@ -7,8 +7,6 @@ import { api } from '@/lib/api';
 import FilterBar from '@/components/FilterBar';
 import StatusBadge from '@/components/StatusBadge';
 import { 
-  ShieldAlert, 
-  ArrowLeft, 
   ChevronLeft, 
   ChevronRight, 
   AlertTriangle,
@@ -27,7 +25,7 @@ export default function ReportsListPage() {
   const limit = 10;
 
   // Fetch Reports list matching filters
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ['reportsList', { search, category, urgency, status, fromDate, toDate, page }],
     queryFn: () => api.getReports({
       search,
@@ -39,7 +37,7 @@ export default function ReportsListPage() {
       page,
       limit
     }),
-    placeholderData: (previousData) => previousData, // keep previous data visible while loading new filters
+    placeholderData: (previousData) => previousData,
   });
 
   const handleResetFilters = () => {
@@ -65,27 +63,6 @@ export default function ReportsListPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800">
-      {/* Header */}
-      <header className="bg-slate-900 text-white py-4 px-6 md:px-12 flex items-center justify-between border-b border-slate-800 shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-600 rounded-lg text-white">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">CrisisDesk AI</h1>
-            <p className="text-xs text-slate-400">Emergency Reports Repository</p>
-          </div>
-        </div>
-
-        <Link 
-          href="/" 
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-sm font-medium rounded-xl border border-slate-700 hover:bg-slate-700 transition-colors duration-200 cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Dashboard</span>
-        </Link>
-      </header>
-
       {/* Main Container */}
       <main className="flex-grow p-6 md:p-12 max-w-7xl mx-auto w-full">
         {/* Title */}

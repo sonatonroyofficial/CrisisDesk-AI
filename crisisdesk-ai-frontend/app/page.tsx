@@ -7,7 +7,6 @@ import StatCard from '../components/StatCard';
 import CategoryBarChart from '../components/CategoryBarChart';
 import UrgencyPieChart from '../components/UrgencyPieChart';
 import { 
-  ShieldAlert, 
   FileText, 
   AlertOctagon, 
   Clock, 
@@ -25,30 +24,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800">
-      {/* Premium Navy Blue Header */}
-      <header className="bg-slate-900 text-white py-4 px-6 md:px-12 flex items-center justify-between border-b border-slate-800 shadow-md">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-600 rounded-lg text-white">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">CrisisDesk AI</h1>
-            <p className="text-xs text-slate-400">Emergency Report Triage Console</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => refetch()} 
-            disabled={isLoading || isRefetching}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-sm font-medium rounded-xl border border-slate-700 hover:bg-slate-700 disabled:opacity-50 transition-colors duration-200 cursor-pointer"
-          >
-            <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
-        </div>
-      </header>
-
       {/* Main Container */}
       <main className="flex-grow p-6 md:p-12 max-w-7xl mx-auto w-full">
         {/* Title Section */}
@@ -57,12 +32,24 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold tracking-tight text-slate-950">System Metrics Dashboard</h2>
             <p className="text-sm text-slate-500 mt-1">Real-time summaries and classification analysis of incoming citizen reports.</p>
           </div>
-          {isRefetching && (
-            <span className="self-start sm:self-center px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full border border-blue-100 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping" />
-              Syncing...
-            </span>
-          )}
+          
+          <div className="flex items-center gap-3 shrink-0">
+            {isRefetching && (
+              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full border border-blue-100 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping" />
+                Syncing...
+              </span>
+            )}
+            
+            <button 
+              onClick={() => refetch()} 
+              disabled={isLoading || isRefetching}
+              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         {/* Error Callout */}
