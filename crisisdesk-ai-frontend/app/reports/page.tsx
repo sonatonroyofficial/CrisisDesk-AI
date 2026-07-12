@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthContext';
 import { api } from '@/lib/api';
 import FilterBar from '@/components/FilterBar';
 import StatusBadge from '@/components/StatusBadge';
@@ -14,6 +16,16 @@ import {
 } from 'lucide-react';
 
 export default function ReportsListPage() {
+  const { isAdmin } = useAuth();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated as admin
+  React.useEffect(() => {
+    if (!isAdmin) {
+      router.push('/login');
+    }
+  }, [isAdmin, router]);
+
   // Filters State
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
@@ -37,8 +49,13 @@ export default function ReportsListPage() {
       page,
       limit
     }),
+    enabled: isAdmin, // Only query backend if admin session is active
     placeholderData: (previousData) => previousData,
   });
+
+  if (!isAdmin) {
+    return null;
+  }
 
   const handleResetFilters = () => {
     setSearch('');

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useAuth } from '@/components/AuthContext';
 import { api } from '@/lib/api';
 import StatusBadge from '@/components/StatusBadge';
 import { 
@@ -25,23 +26,20 @@ export default function ReportDetailPage() {
   const queryClient = useQueryClient();
   const id = params.id as string;
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+  const { token, isAdmin, logout } = useAuth();
 
-  // Check admin login status on client mount
+  // Redirect to login if not authenticated as admin
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const activeToken = localStorage.getItem('crisisdesk_admin_token');
-      setToken(activeToken);
-      setIsAdmin(!!activeToken);
+    if (!isAdmin) {
+      router.push('/login');
     }
-  }, []);
+  }, [isAdmin, router]);
 
   // Fetch Report Details
   const { data: report, isLoading, isError, error } = useQuery({
     queryKey: ['reportDetails', id],
     queryFn: () => api.getReportById(id),
-    enabled: !!id,
+    enabled: !!id && isAdmin,
   });
 
   // Mutation for updating status
@@ -60,12 +58,8 @@ export default function ReportDetailPage() {
   };
 
   const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('crisisdesk_admin_token');
-      setToken(null);
-      setIsAdmin(false);
-      router.push('/');
-    }
+    logout();
+    router.push('/');
   };
 
   if (isLoading) {

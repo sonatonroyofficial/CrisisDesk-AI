@@ -38,8 +38,8 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           {/* User Side Link */}
           <Link 
-            href="/submit" 
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${pathname === '/submit' ? 'text-white bg-blue-600/40 border border-blue-500/50' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
+            href="/" 
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${pathname === '/' ? 'text-white bg-blue-600/40 border border-blue-500/50' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
           >
             <Send className="w-4 h-4 text-blue-400" />
             <span>📢 Citizen Portal</span>
@@ -48,35 +48,43 @@ export default function Navbar() {
           <span className="h-4 w-px bg-slate-850" />
 
           {/* Admin Side Links */}
-          <Link 
-            href="/" 
-            className={`flex items-center gap-1.5 transition-colors ${pathname === '/' ? 'text-blue-400 font-bold' : 'text-slate-350 hover:text-white'}`}
-          >
-            <LayoutDashboard className="w-4 h-4" />
-            Admin Dashboard
-          </Link>
-          <Link 
-            href="/reports" 
-            className={`flex items-center gap-1.5 transition-colors ${pathname.startsWith('/reports') ? 'text-blue-400 font-bold' : 'text-slate-350 hover:text-white'}`}
-          >
-            <Database className="w-4 h-4" />
-            Reports Directory
-          </Link>
+          {isAdmin && (
+            <>
+              <Link 
+                href="/admin" 
+                className={`flex items-center gap-1.5 transition-colors ${pathname === '/admin' ? 'text-blue-400 font-bold' : 'text-slate-350 hover:text-white'}`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Admin Dashboard
+              </Link>
+              <Link 
+                href="/reports" 
+                className={`flex items-center gap-1.5 transition-colors ${pathname.startsWith('/reports') ? 'text-blue-400 font-bold' : 'text-slate-350 hover:text-white'}`}
+              >
+                <Database className="w-4 h-4" />
+                Reports Directory
+              </Link>
+            </>
+          )}
         </nav>
       </div>
 
       <div className="flex items-center gap-4">
         {/* Mobile quick links */}
         <div className="flex md:hidden items-center gap-3 text-xs font-semibold mr-2">
-          <Link href="/submit" className={pathname === '/submit' ? 'text-blue-400' : 'text-slate-300'}>
+          <Link href="/" className={pathname === '/' ? 'text-blue-400' : 'text-slate-300'}>
             Report 📢
           </Link>
-          <Link href="/" className={pathname === '/' ? 'text-blue-400' : 'text-slate-300'}>
-            Dashboard
-          </Link>
-          <Link href="/reports" className={pathname.startsWith('/reports') ? 'text-blue-400' : 'text-slate-300'}>
-            Directory
-          </Link>
+          {isAdmin && (
+            <>
+              <Link href="/admin" className={pathname === '/admin' ? 'text-blue-400' : 'text-slate-300'}>
+                Dashboard
+              </Link>
+              <Link href="/reports" className={pathname.startsWith('/reports') ? 'text-blue-400' : 'text-slate-300'}>
+                Directory
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Admin Session Panel */}

@@ -5,6 +5,8 @@ import { env } from './env';
 // Mongoose connection helper
 export async function connectDB(): Promise<void> {
   try {
+    // Disable query buffering so database calls fail fast if connection is offline
+    mongoose.set('bufferCommands', false);
     await mongoose.connect(env.MONGODB_URI);
     console.log('You successfully connected to MongoDB via Mongoose!');
   } catch (error) {

@@ -1,137 +1,221 @@
 'use client';
 
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../lib/api';
-import StatCard from '../components/StatCard';
-import CategoryBarChart from '../components/CategoryBarChart';
-import UrgencyPieChart from '../components/UrgencyPieChart';
+import React, { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import Link from 'next/link';
+import { api, Report } from '@/lib/api';
+import StatusBadge from '@/components/StatusBadge';
 import { 
+  ShieldAlert, 
+  Send, 
+  MapPin, 
   FileText, 
-  AlertOctagon, 
-  Clock, 
+  User, 
+  Phone, 
   CheckCircle2, 
-  RefreshCw, 
-  AlertCircle 
+  AlertTriangle,
+  ArrowRight
 } from 'lucide-react';
 
-export default function DashboardPage() {
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
-    queryKey: ['statsSummary'],
-    queryFn: () => api.getStatsSummary(),
-    refetchInterval: 10000, // Auto-refresh every 10 seconds for real-time simulation
+export default function CitizenSubmitPage() {
+  const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
+  const [name, setName] = useState('');
+  const [contact, setContact] = useState('');
+  const [submittedReport, setSubmittedReport] = useState<Report | null>(null);
+
+  const submitMutation = useMutation({
+    mutationFn: () => api.createReport({
+      description,
+      location,
+      name: name || undefined,
+      contact: contact || undefined,
+      language: 'en',
+    }),
+    onSuccess: (data) => {
+      setSubmittedReport(data);
+    },
   });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description || !location) return;
+    submitMutation.mutate();
+  };
+
+  const handleReset = () => {
+    setDescription('');
+    setLocation('');
+    setName('');
+    setContact('');
+    setSubmittedReport(null);
+    submitMutation.reset();
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col text-slate-800">
-      {/* Main Container */}
-      <main className="flex-grow p-6 md:p-12 max-w-7xl mx-auto w-full">
-        {/* Title Section */}
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-950">System Metrics Dashboard</h2>
-            <p className="text-sm text-slate-500 mt-1">Real-time summaries and classification analysis of incoming citizen reports.</p>
-          </div>
-          
-          <div className="flex items-center gap-3 shrink-0">
-            {isRefetching && (
-              <span className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-semibold rounded-full border border-blue-100 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-ping" />
-                Syncing...
-              </span>
-            )}
-            
-            <button 
-              onClick={() => refetch()} 
-              disabled={isLoading || isRefetching}
-              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold rounded-xl border border-slate-200 disabled:opacity-50 transition-colors shadow-sm cursor-pointer"
-            >
-              <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
-              <span>Refresh</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Error Callout */}
-        {isError && (
-          <div className="mb-8 p-4 bg-red-50 border border-red-150 rounded-2xl flex items-start gap-3 text-red-800">
-            <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
-            <div>
-              <h4 className="font-bold text-sm">Connection Failed</h4>
-              <p className="text-xs mt-1">
-                Unable to retrieve statistics from the backend server ({error instanceof Error ? error.message : 'Unknown Connection Error'}). 
-                Please ensure your Express server is running on port 3000 and MongoDB is active.
-              </p>
-              <button 
-                onClick={() => refetch()}
-                className="mt-3 px-3 py-1 bg-red-100 text-xs font-bold rounded-lg hover:bg-red-200 transition-colors"
-              >
-                Retry Connection
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Loading / Stat Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white p-6 rounded-2xl border border-slate-100 h-28 animate-pulse flex flex-col justify-between">
-                <div className="h-4 bg-slate-100 rounded w-2/3" />
-                <div className="h-8 bg-slate-100 rounded w-1/3" />
+      <main className="flex-grow p-6 md:p-12 max-w-3xl mx-auto w-full flex flex-col justify-center">
+        {submittedReport ? (
+          /* Success Screen */
+          <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-md flex flex-col gap-6">
+            <div className="flex items-center gap-3 text-emerald-600 mb-2">
+              <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
+                <CheckCircle2 className="w-8 h-8" />
               </div>
-            ))
-          ) : (
-            <>
-              <StatCard 
-                title="Total Reports" 
-                value={data?.totalReports || 0} 
-                icon={<FileText className="w-6 h-6 text-slate-500" />}
-                colorClass="text-slate-900"
-              />
-              <StatCard 
-                title="Critical Incidents" 
-                value={data?.criticalReports || 0} 
-                icon={<AlertOctagon className="w-6 h-6 text-red-500 animate-pulse" />}
-                colorClass="text-red-600"
-              />
-              <StatCard 
-                title="Pending Triage" 
-                value={data?.pendingReports || 0} 
-                icon={<Clock className="w-6 h-6 text-amber-500" />}
-                colorClass="text-amber-600"
-              />
-              <StatCard 
-                title="Resolved Cases" 
-                value={data?.resolvedReports || 0} 
-                icon={<CheckCircle2 className="w-6 h-6 text-emerald-500" />}
-                colorClass="text-emerald-600"
-              />
-            </>
-          )}
-        </div>
+              <div>
+                <h2 className="text-xl font-bold">Report Submitted Successfully</h2>
+                <p className="text-xs text-slate-400">Classified and triaged by CrisisDesk AI in real-time.</p>
+              </div>
+            </div>
 
-        {/* Loading / Charts Section */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-96 bg-white border border-slate-100 rounded-2xl animate-pulse" />
-            <div className="h-96 bg-white border border-slate-100 rounded-2xl animate-pulse" />
+            {/* AI Classification Summary Card */}
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-150 flex flex-col gap-4">
+              <div className="flex items-center gap-2 flex-wrap select-none">
+                <StatusBadge type="status" value={submittedReport.status} />
+                <StatusBadge type="urgency" value={submittedReport.urgency} />
+              </div>
+
+              <div>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">AI Summary Abstract</p>
+                <p className="text-sm font-medium text-slate-700 mt-1 italic leading-relaxed">
+                  &ldquo;{submittedReport.summary || 'Triage summary failed or pending.'}&rdquo;
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Category</p>
+                  <p className="text-sm font-bold text-slate-800 capitalize mt-0.5">
+                    {submittedReport.category ? submittedReport.category.replace('_', ' ') : 'Unset'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Location</p>
+                  <p className="text-sm font-bold text-slate-800 mt-0.5 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    {submittedReport.location}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Duplicate Flag Alert */}
+            {submittedReport.possibleDuplicate && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <p>
+                  <strong>Notice:</strong> This incident matches an existing report within our Jaccard threshold. Our dispatch team is merging this with the active response file.
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-2">
+              <button
+                onClick={handleReset}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm border border-slate-200 transition-all cursor-pointer"
+              >
+                File Another Report
+              </button>
+              <Link
+                href="/admin"
+                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-1.5"
+              >
+                Go to Admin Console
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <CategoryBarChart data={data?.categoryBreakdown || {}} />
+          /* Submission Form */
+          <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-md">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-900">Emergency Citizen Portal</h2>
+              <p className="text-sm text-slate-500 mt-1">Submit public safety concerns, hazards, or incidents for immediate AI classification and response triage.</p>
             </div>
-            <div>
-              <UrgencyPieChart data={data?.urgencyBreakdown || {}} />
-            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              {/* Location */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <MapPin className="w-3.5 h-3.5" />
+                  Incident Location <span className="text-red-500 font-bold">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  placeholder="e.g. Banani Road 11, near Sector 4 Market"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                  <FileText className="w-3.5 h-3.5" />
+                  Description of Emergency <span className="text-red-500 font-bold">*</span>
+                </label>
+                <textarea
+                  required
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What is happening? Describe the situation (You can write in English, Bangla, or mixed)"
+                  rows={4}
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+                />
+              </div>
+
+              {/* Optional Grid (Name / Phone) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Name */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <User className="w-3.5 h-3.5" />
+                    Your Name (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter your name"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  />
+                </div>
+
+                {/* Contact */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5" />
+                    Contact Number (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    value={contact}
+                    onChange={(e) => setContact(e.target.value)}
+                    placeholder="e.g. +8801900000000"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={submitMutation.isPending || !description || !location}
+                className="w-full py-3 mt-4 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-bold rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Send className="w-4 h-4" />
+                {submitMutation.isPending ? 'Submitting & Classifying Triage...' : 'Submit Emergency Report'}
+              </button>
+            </form>
           </div>
         )}
       </main>
 
       {/* Footer */}
-      <footer className="py-6 border-t border-slate-200 text-center text-xs text-slate-400">
-        <p>&copy; {new Date().getFullYear()} CrisisDesk AI. All rights reserved.</p>
+      <footer className="py-6 border-t border-slate-200 text-center text-xs text-slate-400 bg-white">
+        <p>&copy; {new Date().getFullYear()} CrisisDesk AI. Citizen emergency reporting portal.</p>
       </footer>
     </div>
   );

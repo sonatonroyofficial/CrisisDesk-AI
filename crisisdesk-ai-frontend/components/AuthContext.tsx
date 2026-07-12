@@ -12,14 +12,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
+  // Synchronous initialization from localStorage to prevent screen flickering/redirect loops
+  const [token, setToken] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      const activeToken = localStorage.getItem('crisisdesk_admin_token');
-      setToken(activeToken);
+      return localStorage.getItem('crisisdesk_admin_token');
     }
-  }, []);
+    return null;
+  });
 
   const login = (newToken: string) => {
     if (typeof window !== 'undefined') {
