@@ -41,9 +41,9 @@ export async function classifyReport({
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-3.5-flash as active in this environment
+    // Use gemini-1.5-flash as active in this environment
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: 'You are an emergency-report triage classifier for CrisisDesk AI. Given a citizen\'s report (which may be in Bangla, English, or mixed), return ONLY a raw JSON object — no markdown, no explanation — matching: { "category": one of ["medical","fire","accident","crime","flood","utility","public_service","infrastructure","other"], "urgency": one of ["low","medium","high","critical"], "summary": a one-sentence English summary of the report, "suggestedAction": a short recommended action for responders, "citizenAdvice": a short reassuring first-aid or immediate safety instruction (in simple English) advising what the reporter should do right now in this situation before responders arrive, "confidence": a number between 0 and 1 }',
     });
 
