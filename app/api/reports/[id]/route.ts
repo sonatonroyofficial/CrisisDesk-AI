@@ -71,3 +71,52 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }
+
+// PATCH /api/reports/[id] (Edit a report - ADMIN ONLY)
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    await connectDB();
+    const { id } = params;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
+    }
+
+    const isAdmin = await verifyAdmin(req);
+    if (!isAdmin) {
+      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    
+    // Only allow updating these fields
+    const { description, location, category, urgency, name, contact } = body;
+    
+    const updates: any = {};
+    if (description !== undefined) updates.description = description;
+    if (location !== undefined) updates.location = location;
+    if (category !== undefined) updates.category = category;
+    if (urgency !== undefined) updates.urgency = urgency;
+    if (name !== undefined) updates.name = name;
+    if (contact !== undefined) updates.contact = contact;
+
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ success: false, message: 'No valid fields provided for update.' }, { status: 400 });
+    }
+
+    const updatedReport = await Report.findByIdAndUpdate(
+      id,
+      { $set: updates },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedReport) {
+      return NextResponse.json({ success: false, message: 'Report not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true, data: updatedReport });
+  } catch (error: any) {
+    console.error(`[PATCH /api/reports/${params.id} Error]:`, error);
+    return NextResponse.json({ success: false, message: error.message || 'Internal Server Error' }, { status: 500 });
+  }
+}

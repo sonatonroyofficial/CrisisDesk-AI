@@ -26,6 +26,16 @@ export default function ReportDetailPage() {
   const queryClient = useQueryClient();
   const id = params.id as string;
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    category: '',
+    urgency: '',
+    location: '',
+    description: '',
+    name: '',
+    contact: ''
+  });
+
   const { token, isAdmin, isInitialized, logout } = useAuth();
 
   // Redirect to login if not authenticated as admin
@@ -42,6 +52,19 @@ export default function ReportDetailPage() {
     enabled: !!id && isAdmin,
   });
 
+  useEffect(() => {
+    if (report) {
+      setEditForm({
+        category: report.category || '',
+        urgency: report.urgency || '',
+        location: report.location || '',
+        description: report.description || '',
+        name: report.name || '',
+        contact: report.contact || ''
+      });
+    }
+  }, [report]);
+
   // Mutation for updating status
   const updateStatusMutation = useMutation({
     mutationFn: (newStatus: string) => api.updateReportStatus(id, newStatus),
@@ -53,8 +76,37 @@ export default function ReportDetailPage() {
     },
   });
 
+  const updateReportMutation = useMutation({
+    mutationFn: (data: any) => api.updateReport(id, data),
+    onSuccess: (updatedReport) => {
+      queryClient.setQueryData(['reportDetails', id], updatedReport);
+      queryClient.invalidateQueries({ queryKey: ['reportsList'] });
+      queryClient.invalidateQueries({ queryKey: ['statsSummary'] });
+      setIsEditing(false);
+    }
+  });
+
+  const deleteReportMutation = useMutation({
+    mutationFn: () => api.deleteReport(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reportsList'] });
+      queryClient.invalidateQueries({ queryKey: ['statsSummary'] });
+      router.push('/reports');
+    }
+  });
+
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     updateStatusMutation.mutate(e.target.value);
+  };
+
+  const handleSaveEdit = () => {
+    updateReportMutation.mutate(editForm);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm("Are you sure you want to delete this report? This action cannot be undone.")) {
+      deleteReportMutation.mutate();
+    }
   };
 
   const handleLogout = () => {
@@ -148,58 +200,159 @@ export default function ReportDetailPage() {
           
           {/* Main Details (Left Col) */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            
-            {/* AI Triage Classification Card */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
-                AI Triage Classification
-              </h3>
+            {isEditing ? (
+              <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col gap-4">
+                <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-3 mb-2">Edit Report Details</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-500">Category</label>
+                    <select
+                      value={editForm.category}
+                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 capitalize"
+                    >
+                      <option value="">Unset</option>
+                      <option value="medical">Medical</option>
+                      <option value="fire">Fire</option>
+                      <option value="accident">Accident</option>
+                      <option value="crime">Crime</option>
+                      <option value="flood">Flood</option>
+                      <option value="utility">Utility</option>
+                      <option value="public_service">Public Service</option>
+                      <option value="infrastructure">Infrastructure</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-500">Urgency</label>
+                    <select
+                      value={editForm.urgency}
+                      onChange={(e) => setEditForm({ ...editForm, urgency: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 capitalize"
+                    >
+                      <option value="">Unset</option>
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6 pb-6 border-b border-slate-100">
-                <div>
-                  <p className="text-xs text-slate-400">Classified Category</p>
-                  <p className="text-lg font-bold text-slate-800 capitalize mt-1">
-                    {report.category ? report.category.replace('_', ' ') : 'Unset'}
-                  </p>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-500">Location</label>
+                  <input
+                    type="text"
+                    value={editForm.location}
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-                <div>
-                  <p className="text-xs text-slate-400">Assigned Urgency</p>
-                  <p className="text-lg font-bold text-slate-800 capitalize mt-1">
-                    {report.urgency || 'Unset'}
-                  </p>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-slate-500">Description</label>
+                  <textarea
+                    rows={4}
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
                 </div>
-                <div>
-                  <p className="text-xs text-slate-400">Model Confidence</p>
-                  <p className="text-lg font-bold text-slate-800 mt-1">
-                    {report.confidence !== null ? `${(report.confidence * 100).toFixed(0)}%` : 'N/A'}
-                  </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-500">Reporter Name</label>
+                    <input
+                      type="text"
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-500">Contact Number</label>
+                    <input
+                      type="text"
+                      value={editForm.contact}
+                      onChange={(e) => setEditForm({ ...editForm, contact: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveEdit}
+                    disabled={updateReportMutation.isPending}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    {updateReportMutation.isPending ? 'Saving...' : 'Save Changes'}
+                  </button>
                 </div>
               </div>
+            ) : (
+              <>
+                {/* AI Triage Classification Card */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
+                    AI Triage Classification
+                  </h3>
 
-              <div>
-                <p className="text-xs text-slate-400">Incident Abstract Summary (English)</p>
-                <p className="text-sm font-medium text-slate-700 mt-2 bg-slate-50 p-4 rounded-xl leading-relaxed italic border border-slate-100">
-                  &ldquo;{report.summary || 'AI classification pending or failed.'}&rdquo;
-                </p>
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6 pb-6 border-b border-slate-100">
+                    <div>
+                      <p className="text-xs text-slate-400">Classified Category</p>
+                      <p className="text-lg font-bold text-slate-800 capitalize mt-1">
+                        {report.category ? report.category.replace('_', ' ') : 'Unset'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Assigned Urgency</p>
+                      <p className="text-lg font-bold text-slate-800 capitalize mt-1">
+                        {report.urgency || 'Unset'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400">Model Confidence</p>
+                      <p className="text-lg font-bold text-slate-800 mt-1">
+                        {report.confidence !== null ? `${(report.confidence * 100).toFixed(0)}%` : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Incident Description Card */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Original Incident Description</h3>
-              <p className="text-sm font-medium text-slate-800 leading-relaxed whitespace-pre-wrap">
-                {report.description}
-              </p>
-            </div>
+                  <div>
+                    <p className="text-xs text-slate-400">Incident Abstract Summary (English)</p>
+                    <p className="text-sm font-medium text-slate-700 mt-2 bg-slate-50 p-4 rounded-xl leading-relaxed italic border border-slate-100">
+                      &ldquo;{report.summary || 'AI classification pending or failed.'}&rdquo;
+                    </p>
+                  </div>
+                </div>
 
-            {/* Responder Suggested Action */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Recommended Response Protocol</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {report.suggestedAction || 'Deploy standard responders for verification.'}
-              </p>
-            </div>
+                {/* Incident Description Card */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Original Incident Description</h3>
+                  <p className="text-sm font-medium text-slate-800 leading-relaxed whitespace-pre-wrap">
+                    {report.description}
+                  </p>
+                </div>
+
+                {/* Responder Suggested Action */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Recommended Response Protocol</h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {report.suggestedAction || 'Deploy standard responders for verification.'}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Right Column: Metadata & Admin Panel */}
@@ -233,9 +386,27 @@ export default function ReportDetailPage() {
                     <span className="text-[10px] text-blue-600 font-semibold animate-pulse self-end">Updating Status...</span>
                   )}
                   
+                  <div className="h-px bg-slate-100 w-full my-1" />
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => setIsEditing(!isEditing)}
+                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                    >
+                      {isEditing ? 'Cancel Edit' : 'Edit Details'}
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleteReportMutation.isPending}
+                      className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 text-xs font-bold rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {deleteReportMutation.isPending ? 'Deleting...' : 'Delete Report'}
+                    </button>
+                  </div>
+
                   <button 
                     onClick={handleLogout}
-                    className="mt-2 text-center text-xs font-bold text-red-600 hover:text-red-800 transition-colors w-full cursor-pointer border-none bg-transparent"
+                    className="mt-2 text-center text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors w-full cursor-pointer border-none bg-transparent"
                   >
                     Logout Admin Session
                   </button>

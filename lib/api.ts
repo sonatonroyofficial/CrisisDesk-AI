@@ -22,6 +22,7 @@ export interface Report {
   confidence: number | null;
   possibleDuplicate: boolean;
   matchedReportId: string | null;
+  duplicateReason?: string | null;
   status: 'pending' | 'in_review' | 'assigned' | 'resolved' | 'rejected';
   createdAt: string;
   updatedAt: string;
@@ -141,6 +142,16 @@ export const api = {
       method: 'PATCH',
       headers: getHeaders(),
       body: JSON.stringify({ status }),
+    });
+    return handleResponse<Report>(res);
+  },
+
+  // 4.5. Update Report Details
+  async updateReport(id: string, data: Partial<Report>): Promise<Report> {
+    const res = await fetch(`${BASE_URL}/api/reports/${id}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
     });
     return handleResponse<Report>(res);
   },
