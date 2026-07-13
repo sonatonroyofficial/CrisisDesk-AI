@@ -174,6 +174,8 @@ export default function CitizenSubmitPage() {
     );
   };
 
+  const [toastMessage, setToastMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
+
   const submitMutation = useMutation({
     mutationFn: () =>
       api.createReport({
@@ -185,12 +187,18 @@ export default function CitizenSubmitPage() {
       }),
     onSuccess: (data) => {
       setSubmittedReport(data);
+      setToastMessage(null);
     },
+    onError: (err: any) => {
+      setToastMessage({ type: 'error', text: err.message || 'An error occurred while submitting. Please try again.' });
+      setTimeout(() => setToastMessage(null), 6000);
+    }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!description || !isLocationReady) return;
+    setToastMessage(null);
     submitMutation.mutate();
   };
 
@@ -351,15 +359,6 @@ export default function CitizenSubmitPage() {
                   >
                     File Another Report
                   </button>
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/10"
-                    >
-                      Go to Admin Console
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  )}
                 </div>
               </div>
             ) : (
@@ -490,11 +489,12 @@ export default function CitizenSubmitPage() {
                     </div>
                     <div className="flex flex-col gap-2">
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5 select-none">
-                        <Phone className="w-3.5 h-3.5 text-slate-500" />
-                        Contact Number (Optional)
+                        <Phone className="w-3.5 h-3.5 text-blue-400" />
+                        Contact Number <span className="text-red-500 font-bold">*</span>
                       </label>
                       <input
                         type="tel"
+                        required
                         value={contact}
                         onChange={(e) => setContact(e.target.value)}
                         placeholder="e.g. 017xxxxxxxx"
@@ -504,9 +504,15 @@ export default function CitizenSubmitPage() {
                   </div>
 
                   {/* Submit */}
+                  {toastMessage && (
+                    <div className={`p-4 border rounded-xl text-sm flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300 ${toastMessage.type === 'error' ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'}`}>
+                      <AlertTriangle className={`w-5 h-5 shrink-0 ${toastMessage.type === 'error' ? 'text-amber-400' : 'text-emerald-400'}`} />
+                      <span className="font-medium leading-relaxed">{toastMessage.text}</span>
+                    </div>
+                  )}
                   <button
                     type="submit"
-                    disabled={submitMutation.isPending || !description || !isLocationReady}
+                    disabled={submitMutation.isPending || !description || !isLocationReady || !contact}
                     className="w-full py-3.5 mt-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-40 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-red-950/10 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                   >
                     <Send className="w-4 h-4" />

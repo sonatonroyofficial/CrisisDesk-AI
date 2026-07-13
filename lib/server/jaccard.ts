@@ -52,6 +52,7 @@ interface DuplicateCheckParams {
 interface DuplicateCheckResult {
   possibleDuplicate: boolean;
   matchedReportId: any;
+  duplicateReason?: string;
 }
 
 export async function checkDuplicate({
@@ -89,6 +90,7 @@ export async function checkDuplicate({
           return {
             possibleDuplicate: true,
             matchedReportId: candidate._id,
+            duplicateReason: `AI Semantic Match (${(similarity * 100).toFixed(1)}%). Another similar incident was reported from this location in the last 24 hours.`,
           };
         }
       }
@@ -107,6 +109,7 @@ export async function checkDuplicate({
       return {
         possibleDuplicate: true,
         matchedReportId: candidate._id,
+        duplicateReason: `High Text Overlap (${(similarity * 100).toFixed(1)}%). Another similar incident was reported from this location in the last 24 hours.`,
       };
     }
   }

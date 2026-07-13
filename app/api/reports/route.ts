@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
     const urgency = searchParams.get('urgency');
     const status = searchParams.get('status');
     const search = searchParams.get('search');
+    const contact = searchParams.get('contact');
     const from = searchParams.get('from');
     const to = searchParams.get('to');
     const page = searchParams.get('page');
@@ -31,6 +32,7 @@ export async function GET(req: NextRequest) {
     if (category) query.category = category;
     if (urgency) query.urgency = urgency;
     if (status) query.status = status;
+    if (contact) query.contact = contact;
 
     // Search query on description and location
     if (search) {
@@ -93,11 +95,26 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const body = await req.json();
-    const { description, location, contact, name, language } = body;
+    const { description, location, urgency, name, contact, language } = await req.json();
 
-    if (!description || !location) {
-      return NextResponse.json({ success: false, message: 'Description and location are required.' }, { status: 400 });
+    if (!description || !location || !contact) {
+      return NextResponse.json({ success: false, message: 'Description, location, and contact number are required.' }, { status: 400 });
+    }
+
+    // Check if this contact number submitted a report in the last 24 hours
+    if (contact && contact.trim() !== '') {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentReport = await Report.findOne({
+        contact: contact.trim(),
+        createdAt: { $gte: twentyFourHoursAgo }
+      });
+
+      if (recentReport) {
+        return NextResponse.json(
+          { success: false, message: 'You have already submitted a report in the last 24 hours. Please track your existing report or try again later. 😊' },
+          { status: 429 }
+        );
+      }
     }
 
     const reportLang = language || 'unknown';
@@ -149,6 +166,7 @@ export async function POST(req: NextRequest) {
       confidence: aiResult.confidence,
       possibleDuplicate: duplicateCheck.possibleDuplicate,
       matchedReportId: duplicateCheck.matchedReportId,
+      duplicateReason: duplicateCheck.duplicateReason,
       embedding: embeddingVal,
       status: 'pending',
     });

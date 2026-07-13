@@ -32,6 +32,7 @@ export interface ReportsFilter {
   urgency?: string;
   status?: string;
   search?: string;
+  contact?: string;
   from?: string;
   to?: string;
   page?: number;

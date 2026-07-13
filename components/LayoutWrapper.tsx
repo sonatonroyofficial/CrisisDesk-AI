@@ -13,7 +13,8 @@ import {
   LogIn,
   Menu,
   X,
-  Lock
+  Lock,
+  Search
 } from 'lucide-react';
 
 export default function LayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -177,6 +178,13 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
           </Link>
 
           <div className="flex items-center gap-4">
+            <Link
+              href="/track"
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white rounded-lg transition-all duration-200 shadow-sm cursor-pointer text-sm font-semibold flex items-center gap-2"
+            >
+              <Search className="w-4 h-4" />
+              <span className="hidden sm:inline">Track Report</span>
+            </Link>
             <Link
               href="/login"
               title="Admin Login"

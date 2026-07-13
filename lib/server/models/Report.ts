@@ -19,6 +19,7 @@ export interface IReport extends Document {
   confidence: number | null;
   possibleDuplicate: boolean;
   matchedReportId: mongoose.Types.ObjectId | null;
+  duplicateReason?: string | null;
   status: StatusType;
   embedding?: number[] | null;
   createdAt: Date;
@@ -83,6 +84,10 @@ const ReportSchema: Schema = new Schema<IReport>(
     matchedReportId: {
       type: Schema.Types.ObjectId,
       ref: 'Report',
+      default: null,
+    },
+    duplicateReason: {
+      type: String,
       default: null,
     },
     status: {
