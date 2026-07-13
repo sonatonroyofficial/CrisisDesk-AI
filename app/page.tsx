@@ -114,6 +114,7 @@ export default function CitizenSubmitPage() {
   const [selectedZilla, setSelectedZilla] = useState('');
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedRoad, setSelectedRoad] = useState('');
+  const [exactLocation, setExactLocation] = useState('');
   const [gpsLocation, setGpsLocation] = useState(''); // filled only when GPS is used
   const [gpsLoading, setGpsLoading] = useState(false);
 
@@ -126,7 +127,7 @@ export default function CitizenSubmitPage() {
   // Composed location string for the API
   const composedLocation = gpsLocation
     ? gpsLocation
-    : [selectedRoad, selectedCity, selectedZilla].filter(Boolean).join(', ');
+    : [exactLocation, selectedRoad, selectedCity, selectedZilla].filter(Boolean).join(', ');
 
   const isLocationReady = !!composedLocation;
 
@@ -149,28 +150,70 @@ export default function CitizenSubmitPage() {
     setGpsLocation('');
   };
 
-  const handleAutoDetectLocation = () => {
+  const handleAutoDetectLocation = async () => {
+    setGpsLoading(true);
+
+    const enrichWithNominatim = async (lat: number, lon: number) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        if (data && data.display_name) {
+          return data.display_name;
+        }
+      } catch (e) {
+        console.error('Nominatim error:', e);
+      }
+      return `GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+    };
+
+    const fallbackToIP = async () => {
+      try {
+        const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+        const data = await res.json();
+        if (data && data.city) {
+          return `${data.city}, ${data.region}, ${data.country} (IP Approx)`;
+        }
+      } catch (e) {
+        console.error('IP fallback error:', e);
+      }
+      return null;
+    };
+
+    const onFallback = async () => {
+      const ipLoc = await fallbackToIP();
+      if (ipLoc) {
+        setGpsLocation(ipLoc);
+        setExactLocation('');
+        setSelectedZilla('');
+        setSelectedCity('');
+        setSelectedRoad('');
+      } else {
+        alert('Could not auto-detect location. Please select manually.');
+      }
+      setGpsLoading(false);
+    };
+
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      console.warn('Geolocation not supported by browser.');
+      await onFallback();
       return;
     }
-    setGpsLoading(true);
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const gps = `GPS: ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`;
-        setGpsLocation(gps);
-        // Clear manual selections so the preview shows GPS only
+      async (pos) => {
+        const address = await enrichWithNominatim(pos.coords.latitude, pos.coords.longitude);
+        setGpsLocation(address);
+        setExactLocation('');
         setSelectedZilla('');
         setSelectedCity('');
         setSelectedRoad('');
         setGpsLoading(false);
       },
-      (err) => {
+      async (err) => {
         console.warn('GPS error:', err);
-        alert('Could not auto-detect location. Please select manually.');
-        setGpsLoading(false);
+        await onFallback();
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 5000 }
     );
   };
 
@@ -425,6 +468,21 @@ export default function CitizenSubmitPage() {
                         ))}
                       </select>
                       <ChevronDown />
+                    </div>
+
+                    {/* Level 4: Exact Location (Building, House, Road No.) */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={exactLocation}
+                        onChange={(e) => {
+                          setExactLocation(e.target.value);
+                          setGpsLocation('');
+                        }}
+                        disabled={!selectedRoad}
+                        placeholder="House/Building No., Road No., etc. (Optional)"
+                        className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 focus:border-blue-500/70 hover:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-blue-500/20 text-white placeholder-slate-600 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      />
                     </div>
 
                     {/* GPS Auto-Detect Button */}

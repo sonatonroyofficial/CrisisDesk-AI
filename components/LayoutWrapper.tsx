@@ -70,7 +70,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
         {/* Sidebar Navigation */}
         <aside className={`
           fixed inset-y-0 left-0 z-40 w-64 bg-slate-900 border-r border-slate-800 text-white flex flex-col justify-between transition-transform duration-300 ease-in-out
-          md:translate-x-0 md:static md:h-screen shrink-0
+          md:translate-x-0 md:sticky md:top-0 md:h-screen shrink-0
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
           <div>
